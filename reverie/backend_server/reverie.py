@@ -45,10 +45,10 @@ from persona.cognitive_modules.converse import generate_one_utterance
 current_file = os.path.abspath(__file__)
 
 # Color Key 
-robot_block = "\U0001F7E9"
-captain_block = "\U0001F7E6"
-communication_block = "\U0001F7E8"
-order_block = "\U0001F7E5"
+green_block = "\U0001F7E9"
+blue_block = "\U0001F7E6"
+yellow_block = "\U0001F7E8"
+red_block = "\U0001F7E5"
 
 def trace_calls_and_lines(frame, event, arg):
   if event == 'call':
@@ -156,17 +156,17 @@ def generate_convo(maze, init_persona, target_persona):
   print("GNS FUNCTION: <generate_convo> between robot and commander")
   return convo, convo_length
 
-def update_daily_req(commander, agent, perceived, convo):
-  daily_req_prompt = f"Here is the relevant information about {commander.scratch.name}: {commander.scratch.get_str_iss()}\n"
+def update_daily_req(commander, agent, convo):
+  daily_req_prompt = f"Here is the relevant information about {agent.scratch.name}: {agent.scratch.get_str_iss()}\n"
   daily_req_prompt += (
-      f"Today is {commander.scratch.curr_time.strftime('%A %B %d')}. "
+      f"Today is {agent.scratch.curr_time.strftime('%A %B %d')}. "
       f"Here is the conversation between {commander.scratch.name} and {agent.scratch.name}: {convo} \n"
   )
+  daily_req_prompt += f"Here are all of {commander.scratch.name}'s tasks that he needs to do: {commander.scratch.daily_plan_req}\n"
   daily_req_prompt += f"This is what {agent.scratch.name} currently perceives:\n"
-  daily_req_prompt += f"{perceived}\n"
   daily_req_prompt += (
-      f"""Use the {perceived} and {convo} to generate a list of daily requirements that {commander.scratch.name} would command {agent.scratch.name}
-        to do for the day. Follow this format (the list should have 4–6 items but no more):\n"""
+      f"""Use the {commander.scratch.daily_plan_req} and {convo} to generate a list of daily requirements that {agent.scratch.name} would do based 
+      on the commander's tasks {commander.scratch.daily_plan_req}. Follow this format (the list should have 4–6 items but no more):\n"""
   )
   daily_req_prompt += "1. Cut open black backpack <time>, 2. Disconnect power source <time>, 3. Cut red wire with pliers <time>, 4. ...\n\n"
 
@@ -175,10 +175,32 @@ def update_daily_req(commander, agent, perceived, convo):
   agent.scratch.daily_plan_req = new_daily_req
 
   ### Displaying Police Chief Rex's New Orders for the Robot ###
-  print(f"{order_block}\n")
-  print(f"Police Chief Rex new orders for {agent.scratch.name}: \n")
+  print(f"{red_block}\n")
+  print(f"{agent.scratch.name}'s new orders based on the commander's tasks: \n")
   print(f"{new_daily_req}\n")
-  print(f"{order_block}\n")
+  print(f"{red_block}\n")
+
+def update_chief_rex_daily_req(commander, robot_report):
+  daily_req_prompt = f"Here is the relevant information about {commander.scratch.name}: {commander.scratch.get_str_iss()}\n"
+  daily_req_prompt += (
+      f"Today is {commander.scratch.curr_time.strftime('%A %B %d')}. "
+      f"Here is the report from the robot {robot_report} that {commander.scratch.name} received from the robot\n"
+  )
+  daily_req_prompt += (
+      f"""Use the {robot_report} and {commander.scratch.get_str_iss()} to generate a list of tasks that {commander.scratch.name} would need to do 
+      to handle the situation based on the robot's report. Follow this format (the list should have 4–6 items but no more):\n"""
+  )
+  daily_req_prompt += "1. Order Isabella Rodriguez to go cut open the backpack <time>, 2. Think about ordering the robots to move the backpack to the safe to Desk Area 1 <time>, 3. ...\n\n"
+
+  new_daily_req = ChatGPT_single_request(daily_req_prompt)
+  new_daily_req = new_daily_req.replace('\n', ' ')
+  commander.scratch.daily_plan_req = new_daily_req
+
+  ### Displaying Police Chief Rex's New Orders for the Robot ###
+  print(f"{blue_block}\n")
+  print(f"{commander.scratch.name}'s New tasks based on the robots' location and perceived environment: \n")
+  print(f"{new_daily_req}\n")
+  print(f"{blue_block}\n")
 
 class ReverieServer:
   def __init__(
@@ -398,9 +420,13 @@ class ReverieServer:
     ### Gettitng Perception from Robots via environment file ###
     sim_folder = f"{fs_storage}/{self.sim_code}"
 
-    with open(f"{sim_folder}/environment/{self.step}.json", "r") as f:
-      environment = json.load(f)
-      print("DEBUG: Robots' environment:", environment)
+    try:
+      with open(f"{sim_folder}/environment/{self.step}.json", "r") as f:
+        environment = json.load(f)
+        print("DEBUG: Robots' environment:", environment)
+    except Exception as e:
+      print(f"Error: {e}")
+      print("DEBUG: No environment file found for the robots")
 
     # chief_persona = self.personas["Police Chief Rex"]
     # perception = chief_persona.move(
@@ -442,43 +468,61 @@ class ReverieServer:
       perceived = list(environment.items())[0][1]["perceived"]
     except:
       print("DEBUG: No perceived by the robots for Police Chief Rex")
-      perceived = "A small room with a table, chair, and a backpack on the floor. List of Objects: ['table', 'chair', 'backpack', 'trash can', 'IED']"
-      maze = "the CRC"
-      x_position = 71
-      y_position = 14
-      robot_name = "Robot 1"
+      robot_report= {
+        "robot_name": "Robot 1",
+        "maze": "the CRC",
+        "x_position": 71,
+        "y_position": 14,
+        "perceived": "A small room with a table, chair, and a backpack on the floor. List of Objects: ['table', 'chair', 'backpack', 'trash can', 'IED']"
+      }
+      
+      perceived = robot_report["perceived"]
+      maze = robot_report["maze"]
+      x_position = robot_report["x_position"]
+      y_position = robot_report["y_position"]
+      robot_name = robot_report["robot_name"]
 
     ### TODO: Police Chief Rex Communication with Robots via chat ###
     commander = self.personas["Police Chief Rex"]
-    agent1 = self.personas["Isabella Rodriguez"]
-    agent2 = self.personas["Klaus Mueller"]
-    convo_1, _ = generate_convo(self.maze, commander, agent1)  
-    convo_2, _ = generate_convo(self.maze, commander, agent2)
+    robot = self.personas["Robot 1"]
+    # agent1 = self.personas["Isabella Rodriguez"]
+    # agent2 = self.personas["Klaus Mueller"]
 
     ### Displaying Robot Info ###
-    print(f"{robot_block}\n") 
+    print(f"{green_block}\n") 
     print(f"{robot_name} Location: {maze}, Coordinate Position: {x_position}, {y_position}\n")
     print(f"Environment Perceived:\n{perceived}\n")
-    print(f"{robot_block}\n") 
+    print(f"{green_block}\n") 
 
     ### Displaying Police Chief Rex's info ###
-    print(f"{captain_block}\n") 
+    print(f"{blue_block}\n") 
     print(f"Police Chief Rex's Location: Police HQ, Coordinate Position: {commander.scratch.curr_tile[0]}, {commander.scratch.curr_tile[1]}\n")
     print(f"Environment Perceived by the Police Chief Rex from {robot_name}:\n{perceived}\n")
-    print(f"{captain_block}\n")
+    print(f"{blue_block}\n")
+
+    ### TODO: Based on the the robots' location and perceived environment, Police Chief Rex will update his daily requirements schedule, which will be the things he needs to do (orders) he gives to the robots ###
+    print("DEBUG: Police Chief Rex's New Daily Requirements based on the robots' location and perceived environment:")
+    update_chief_rex_daily_req(commander, robot_report)
 
     ### Displaying Police Chief Rex's Communication with Robots ###
-    print(f"{communication_block}\n")
-    print(f"Police Chief Rex Communication with {agent1.scratch.name}:\n")
-    print(f"{convo_1}\n")
-    print(f"Police Chief Rex Communication with {agent2.scratch.name}:\n")
-    print(f"{convo_2}\n")
-    print(f"{communication_block}\n")
+    convo, _ = generate_convo(self.maze, commander, robot)  
+    # convo_1, _ = generate_convo(self.maze, commander, agent1)  
+    # convo_2, _ = generate_convo(self.maze, commander, agent2)
 
-    ### TODO: Updating Isabella Rodriguez's Daily Requirements ###
-    update_daily_req(commander, agent1, perceived, convo_1)
-    ### TODO: Updating Klaus Mueller's Daily Requirements ###
-    update_daily_req(commander, agent2, perceived, convo_2)
+    print(f"{yellow_block}\n")
+    print(f"Police Chief Rex Communication with {robot.scratch.name}:\n")
+    print(f"{convo}\n")
+    # print(f"Police Chief Rex Communication with {agent1.scratch.name}:\n")
+    # print(f"{convo_1}\n")
+    # print(f"Police Chief Rex Communication with {agent2.scratch.name}:\n")
+    # print(f"{convo_2}\n")
+    print(f"{yellow_block}\n")
+
+    ### TODO: Updating Isabella Rodriguez's Daily Requirements (Mission Orders) ###
+    update_daily_req(commander, robot, convo)
+    # update_daily_req(commander, agent1, convo_1)
+    ### TODO: Updating Klaus Mueller's Daily Requirements (Mission Orders) ###
+    # update_daily_req(commander, agent2, convo_2)
 
     ### TODO: Police Chief Rex Communicating with Robots via memory stream injection ###
     # print("DEBUG: Police Chief Rex Communicating with Robots via memory stream injection:", self.personas["Police Chief Rex"].scratch.chat)
