@@ -484,7 +484,7 @@ class ReverieServer:
 
     ### TODO: Police Chief Rex Communication with Robots via chat ###
     commander = self.personas["Police Chief Rex"]
-    robot = self.personas["Robot 1"]
+    robot = self.personas["Isabella Rodriguez"]
     # agent1 = self.personas["Isabella Rodriguez"]
     # agent2 = self.personas["Klaus Mueller"]
 
@@ -1118,6 +1118,7 @@ if __name__ == "__main__":
   # Ask if user wants to use MQTT
   use_mqtt_prompt = "Would you like to use MQTT for communication? (y/n): "
   use_mqtt = input(use_mqtt_prompt).strip().lower() == 'y'
+  use_mqtt = True
   if use_mqtt:
     print("MQTT mode enabled")
 

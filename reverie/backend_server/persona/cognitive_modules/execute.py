@@ -91,7 +91,7 @@ def execute(persona, maze, personas, plan):
       # string form. <maze.address_tiles> takes this and returns candidate 
       # coordinates. 
       if plan not in maze.address_tiles: 
-        target_tiles = maze.address_tiles["the Ville:Botanical gardens:Garden:park garden"]
+        target_tiles = maze.address_tiles["the CRC:Living Area:Living Area"]
       else: 
         target_tiles = maze.address_tiles[plan]
 
