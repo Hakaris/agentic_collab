@@ -29,11 +29,10 @@ import traceback
 from typing import Optional, Dict, Any, Tuple
 
 from global_methods import read_file_to_list, check_if_file_exists, copyanything, freeze
-from utils import maze_assets_loc, fs_storage, fs_temp_storage, mqtt_host, mqtt_port, mqtt_client_id, mqtt_movement_topic, mqtt_environment_topic
+from utils import openai_api_key, use_openai, api_model, maze_assets_loc, fs_storage, fs_temp_storage, mqtt_host, mqtt_port, mqtt_client_id, mqtt_movement_topic, mqtt_environment_topic
 from maze import Maze
 from persona.persona import Persona
 from persona.prompt_template.run_gpt_prompt import run_plugin
-from utils import openai_api_key, use_openai, api_model
 from openai import OpenAI
 from mqtt_client import ReverieMQTTClient
 
