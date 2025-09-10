@@ -380,7 +380,7 @@
 		}
 	  }
 
-	  // console.log("phase: " + phase + ", step: " + step);
+	  console.log("phase: " + phase + ", step: " + step);
 	  // *** MOVE PERSONAS ***
 	  // Moving personas take place in three distinct phases: "process," "update,"
 	  // and "execute." These phases are determined by the value of <phase>. 
@@ -402,7 +402,7 @@
 	    // We then send this to the frontend server: 
 	    var retrieve_xobj = new XMLHttpRequest();
 	    retrieve_xobj.overrideMimeType("application/json");
-	    retrieve_xobj.open('GET', "{% url 'get_movements' %}", true);
+	    retrieve_xobj.open('POST', "{% url 'send_environment' %}", true);
 	    retrieve_xobj.send(json);   
 	    // Finally, we update the phase variable to start the "udpate" process. 
 	    // Now that we sent all persona locations to the backend server, we need
@@ -421,12 +421,13 @@
 	    // over-querying; so, we have a timer set so we only query it once every
 	    // timer_max cycles. 
 	    if (timer <= 0) {
-	      var update_xobj = new XMLHttpRequest();
-	      update_xobj.overrideMimeType("application/json");
-	      update_xobj.open('POST', "{% url 'send_environment' %}", true);
-	      update_xobj.addEventListener("load", function() {
-	        if (this.readyState === 4) {
-	          if (update_xobj.status === 200) {
+			var update_xobj = new XMLHttpRequest();
+			update_xobj.overrideMimeType("application/json");
+			update_xobj.open('POST', "{% url 'get_movements' %}", true);
+			update_xobj.addEventListener("load", function() {
+			if (this.readyState === 4) {
+			  
+			  if (update_xobj.status === 200) {
 	            if (JSON.parse(update_xobj.responseText)["<step>"] == step) {
 	              execute_movement = JSON.parse(update_xobj.responseText)
 	              phase = "execute";
@@ -469,7 +470,7 @@
 	        pronunciatios[curr_persona_name].setText(initials + ": " + pronunciatio_content);
 	      }
 
-	      console.log(curr_persona_name);
+	    //   console.log(curr_persona_name);
 	      if (execute_count > 0) {
 	        if (curr_persona.body.x < movement_target[curr_persona_name][0]) {
 	          curr_persona.body.x += movement_speed; 

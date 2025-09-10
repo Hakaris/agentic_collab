@@ -231,8 +231,8 @@ if __name__ == '__main__':
             th, pid = None, None
             # Headless chrome doesn't need a thread since it create a dedicated thread by itself
             if ui == "True":
-                th = Process(target=start_web_tab, args=(ui, browser_path, port))
-                th.start()
+                # th = Process(target=start_web_tab, args=(ui, browser_path, port))
+                # th.start()
                 rs.open_server(input_command=f"run {steps_to_run}")
             elif ui == "False":
                 pid = start_web_tab(ui, browser_path, port)

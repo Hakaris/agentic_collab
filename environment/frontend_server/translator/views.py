@@ -320,12 +320,11 @@ def get_movements(request):
   """
   global movement_data
   
-  if request.method == 'GET':
+  if request.method == 'POST':
     try:
       data = json.loads(request.body)
       step = data.get('step')
       sim_code = data.get('sim_code')
-
       # If using MQTT, require MQTT to be available
       if settings.USE_MQTT:
         if not mqtt_client or not mqtt_client.is_connected:
@@ -343,16 +342,18 @@ def get_movements(request):
 
       else:
         # File-based communication if MQTT is disabled
+        movement_data = {"<step>": -1}
         movement_file = f"storage/{sim_code}/movement/{step}.json"
         if os.path.exists(movement_file):
           with open(movement_file, 'r') as f:
             movement_data = json.load(f)
+            movement_data["<step>"] = step
           return JsonResponse(movement_data)
-        return JsonResponse({"<step>": step})
+        # return JsonResponse({"<step>": step})
+        return JsonResponse(movement_data)
 
     except Exception as e:
       return JsonResponse({"error": str(e)}, status=500)
-
   return JsonResponse({"error": "Invalid request method"}, status=405)
 
 
