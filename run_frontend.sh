@@ -39,4 +39,4 @@ else
     PORT=$1
 fi
 
-python3 ${FRONTEND_SCRIPT_FILE} runserver ${PORT}
+python3 ${FRONTEND_SCRIPT_FILE} runserver 0.0.0.0:${PORT}
